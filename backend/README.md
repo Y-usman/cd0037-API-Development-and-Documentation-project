@@ -102,3 +102,26 @@ createdb trivia_test
 psql trivia_test < trivia.psql
 python test_flaskr.py
 ```
+
+### Error Test
+.....F.....F
+======================================================================
+FAIL: test_422_if_question_creation_fails (__main__.TriviaTestCase)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_flaskr.py", line 149, in test_422_if_question_creation_fails
+    self.assertEqual(results.status_code, 422)
+AssertionError: 200 != 422
+
+======================================================================
+FAIL: test_search_question (__main__.TriviaTestCase)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_flaskr.py", line 157, in test_search_question
+    self.assertEqual(results.status_code, 200)
+AssertionError: 404 != 200
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.372s
+
+FAILED (failures=2)

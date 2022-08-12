@@ -51,7 +51,7 @@ def create_app(test_config=None):
     for all available categories.
     """
     @app.route('/categories')
-    def categories():
+    def get_categories():
         all_categories = Category.query.all()
         all_categories = {category.id: category.type for
                           category in all_categories}
@@ -74,7 +74,7 @@ def create_app(test_config=None):
     Clicking on the page numbers should update the questions.
     """
     @app.route("/questions")
-    def retrieve_questions():
+    def get_questions():
         selection = Question.query.all()
         current_questions = paginate_questions(request, selection)
         current_category = Category.query.get(1)
@@ -129,31 +129,6 @@ def create_app(test_config=None):
     the form will clear and the question will appear at the end of the last page
     of the questions list in the "List" tab.
     """
-    @app.route("/questions", methods=["POST"])
-    def add_questions():
-        data = request.get_json()
-        for i in data.values():
-            if i == "":
-                abort(422)
-        question = data.get('question', None)
-        answer = data.get('answer', None)
-        difficulty = data.get('difficulty', None)
-        category = data.get('category', None)
-        new_question = Question(
-            question=question,
-            answer=answer,
-            category=category,
-            difficulty=difficulty
-        )
-        try:
-            new_question.insert()
-        except Exception as e:
-            print(e)
-            abort(500)
-
-        return jsonify({
-            "success": True
-        }), 200
 
     """
     @TODO:
@@ -165,25 +140,72 @@ def create_app(test_config=None):
     only question that include that string within their question.
     Try using the word "title" to start.
     """
-    @app.route("/question", methods=["POST"])
-    def search_questions():
+    @app.route("/questions", methods=["POST"])
+    def add_questions():
         data = request.get_json()
 
-        search_term = data.get("searchTerm", None)
+        '''
+            - Correction
+            Searching to check if the payload contains the Search Term
+        '''
+        if data.get('searchTerm'):
+            search_term = data.get('searchTerm', None)
 
-        search_result = Question.query.filter(
-            Question.question.ilike(f"%{search_term}%")
-        ).all()
-        current_search = paginate_questions(request, search_result)
-        current_category = Category.query.get(1)
-        current_category = current_category.format()["type"]
+            # Querying the database with the search term
+            search_result = Question.query.filter(Question.question.ilike(f'%{search_term}%')).all()
 
-        return jsonify({
-            "success": True,
-            "questions": current_search,
-            "total_questions": len(search_result),
-            "current_category": current_category
-        })
+            # Abort with error 404 if no results are found
+            if len(search_result) == 0:
+                abort(404)
+            
+            # Paginate the search results
+            paginated = paginate_questions(request, search_result)
+
+            return jsonify({
+                                'success':True,
+                                'questions': paginated,
+                                'total_questions':len(Question.query.all())
+                            })
+
+        # If search term doesn't exist, create a new question
+       
+        else:
+            # Load data
+            new_question = data.get('question', None)
+            new_answer = data.get('answer', None)
+            new_difficulty = data.get('difficulty', None)
+            new_category = data.get('category', None)
+        
+        
+            # ensure all fields are not empty
+            if ((new_question is None) or (new_answer is None)
+                    or (new_difficulty is None) or (new_category is None)):
+                abort(422)
+
+            try:
+                # create and insert new question
+                question = Question(question=new_question, answer=new_answer,
+                                    difficulty=new_difficulty, category=new_category)
+                question.insert()
+
+                # get all questions and paginate if needed
+                selection = Question.query.order_by(Question.id).all()
+                current_questions = paginate_questions(request, selection)
+
+                # return data
+                return jsonify({
+                    'success': True,
+                    'created': question.id,
+                    'question_created': question.question,
+                    'questions': current_questions,
+                    'total_questions': len(Question.query.all())
+                })
+
+            except:
+                # abort unprocessable if there is any exception
+                abort(422)
+
+    
 
     """
     @TODO:
@@ -235,7 +257,6 @@ def create_app(test_config=None):
                 category=quiz_category["id"]).all()
 
             if not all_questions:
-
                 abort(404)
 
         question_list = [q.format() for q in all_questions
@@ -262,33 +283,38 @@ def create_app(test_config=None):
     """
     @app.errorhandler(404)
     def not_found(error):
-        return (
-            jsonify({"success": False, "error": 404,
-                     "message": "resource not found"}),
-            404,
-        )
+        return jsonify({
+                            "success": False, 
+                            "error": 404,
+                            "message": "resource not found"
+                        }), 404
 
     @app.errorhandler(422)
     def unprocessable(error):
-        return (
-            jsonify({"success": False, "error": 422,
-                     "message": "unprocessable"}),
-            422,
-        )
+        return jsonify({
+                            "success": False, 
+                            "error": 422,
+                            "message": "unprocessable"
+                        }), 422
+        
 
     @app.errorhandler(400)
     def bad_request(error):
-        return jsonify({"success": False, "error": 400,
-                        "message": "bad request"}), 400
+        return jsonify({
+                            "success": False, 
+                            "error": 400,
+                            "message": "bad request"
+                        }), 400
 
     @app.errorhandler(500)
     def internal_error(error):
-        return (
-            jsonify({"success": False, "error": 500,
-                     "message": "internal server error"}),
-            500,
-        )
+        return jsonify({
+                            "success": False, 
+                            "error": 500,
+                            "message": "internal server error"
+                        }), 500
 
+    
     return app
 
     
