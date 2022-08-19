@@ -3,22 +3,24 @@ import unittest
 import json
 from unittest import result
 from flask_sqlalchemy import SQLAlchemy
-
 from flaskr import create_app
 from models import setup_db, Question, Category
 
 DB_USER = os.environ.get("DB_USER")
 DB_PASSWORD = os.environ.get("DB_PASSWORD")
 
+
 class TriviaTestCase(unittest.TestCase):
     """This class represents the trivia test case"""
 
     def setUp(self):
         """Define test variables and initialize app."""
+
         self.app = create_app()
         self.client = self.app.test_client
         self.database_name = "trivia_test"
-        self.database_path = "postgresql://{}/{}".format('localhost:5432', self.database_name)
+        self.database_path = "postgresql://{}/{}".format(
+                                'localhost:5432', self.database_name)
         setup_db(self.app, self.database_path)
 
         self.new_question = {"question": "Who let the dogs",
@@ -64,15 +66,17 @@ class TriviaTestCase(unittest.TestCase):
             self.db.init_app(self.app)
             # create all tables
             self.db.create_all()
-    
+
     def tearDown(self):
         """Executed after reach test"""
         pass
 
     """
     TODO
-    Write at least one test for each test for successful operation and for expected errors.
+    Write at least one test for each test for successful operation
+    and for expected errors.
     """
+
     def test_get_paginated_questions(self):
         results = self.client().get('/questions')
         data = json.loads(results.data)
@@ -163,7 +167,6 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["success"], False)
         self.assertEqual(data["message"], "unprocessable")
 
- 
     def test_search_question(self):
         results = self.client().post("/question/search", json=self.search_term)
         data = json.loads(results.data)
@@ -175,16 +178,14 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue((data['current_category']))
 
     def test_get_quiz(self):
-        results = self.client().post("/quizzes",
-                                 json=self.quiz_parameter_all)
+        results = self.client().post("/quizzes", json=self.quiz_parameter_all)
         data = json.loads(results.data)
         self.assertEqual(results.status_code, 200)
         self.assertEqual(data['success'], True)
         self.assertTrue(data['question'])
 
     def test_search_question_failure(self):
-        results = self.client().post("/quizzes",
-                                 json=self.quiz_fail)
+        results = self.client().post("/quizzes", json=self.quiz_fail)
         data = json.loads(results.data)
 
         self.assertEqual(results.status_code, 404)
@@ -192,7 +193,6 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["message"],
                          "resource not found")
 
-        
 
 # Make the tests conveniently executable
 if __name__ == "__main__":
